@@ -1,0 +1,63 @@
+package com.energo.car_metrics.controllers;
+
+import com.energo.car_metrics.dto.FileInfo;
+import com.energo.car_metrics.services.impl.CarsDataInfo;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.core.io.Resource;
+import org.springframework.core.io.UrlResource;
+
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
+
+@RestController
+@RequestMapping("api/cars")
+public class CarsController {
+
+    private static final Logger log = LoggerFactory.getLogger(CarsController.class);
+
+    @Autowired
+    private CarsDataInfo carsDataInfo;
+
+    @GetMapping("list-parser")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<List<FileInfo>> getListParserCars() {
+        return  ResponseEntity.ok(carsDataInfo.getAllListCarsInDir());
+    }
+
+    @DeleteMapping("/delete-file/{fileName}")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<String> deleteEmployee(@PathVariable String fileName) {
+        boolean isDeleted = carsDataInfo.deleteCarDataFile(fileName);
+
+        if (isDeleted) {
+            return ResponseEntity.ok("File " + fileName + " was deleted successfully.");
+        } else {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                    .body("Failed to delete file " + fileName + ". File not found.");
+        }
+    }
+
+    @GetMapping("/download-car-info/{fileName}")
+    public ResponseEntity<Resource> downloadFileCar(@PathVariable String fileName) {
+        try {
+            // Используем сервис для загрузки ресурса
+            Resource resource = carsDataInfo.loadFileAsResource(fileName);
+
+            // Возвращаем файл с заголовками для скачивания
+            return ResponseEntity.ok()
+                    .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + resource.getFilename() + "\"")
+                    .body(resource);
+
+        } catch (Exception e) {
+            return ResponseEntity.notFound().build();
+        }
+    }
+
+}
