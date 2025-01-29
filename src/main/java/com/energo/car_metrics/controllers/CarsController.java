@@ -15,6 +15,7 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequestMapping("api/cars")
@@ -33,7 +34,7 @@ public class CarsController {
 
     @DeleteMapping("/delete-file/{fileName}")
     @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<String> deleteEmployee(@PathVariable String fileName) {
+    public ResponseEntity<String> deleteFileCarInfo(@PathVariable String fileName) {
         boolean isDeleted = carsDataInfo.deleteCarDataFile(fileName);
 
         if (isDeleted) {
@@ -58,6 +59,16 @@ public class CarsController {
         } catch (Exception e) {
             return ResponseEntity.notFound().build();
         }
+    }
+
+    @GetMapping("/data-car-date")
+    @PreAuthorize("hasRole('ADMIN')")
+    public List<Map<String, Object>> getCarDataWithDate(@RequestParam String carBrand,
+                                                        @RequestParam String carModel,
+                                                        @RequestParam int dateStart,
+                                                        @RequestParam int dateMax,
+                                                        @RequestParam int countPages) {
+        return carsDataInfo.fetchCarData(carBrand, carModel, dateStart, dateMax, countPages);
     }
 
 }

@@ -1,6 +1,7 @@
 package com.energo.car_metrics.services.impl;
 
 import com.energo.car_metrics.dto.FileInfo;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.ResponseEntity;
@@ -13,14 +14,27 @@ import java.util.ArrayList;
 import java.io.IOException;
 import java.nio.file.*;
 import java.util.List;
+import java.util.Map;
+
 import org.springframework.core.io.Resource;
 import org.springframework.core.io.UrlResource;
+import org.springframework.web.client.RestTemplate;
 
 @Service
 public class CarsDataInfo {
 
     @Value("${app.path_dir_save_csv}")
     private String getPathDirSaveCSV;
+
+    @Value("${app.format_route_parse_json_date}")
+    private String getRouteParseJsonDate;
+
+    @Autowired
+    private final RestTemplate restTemplate;
+
+    public CarsDataInfo(RestTemplate restTemplate) {
+        this.restTemplate = restTemplate;
+    }
 
     public List<FileInfo> getAllListCarsInDir() {
         List<FileInfo> fileDetails = new ArrayList<>();
@@ -79,5 +93,17 @@ public class CarsDataInfo {
         }
 
         return resource;
+    }
+
+    public List<Map<String, Object>> fetchCarData(
+            String carBrand,
+            String carModel,
+            int dateStart,
+            int dateMax,
+            int countPages
+    ) {
+        String url = String.format(getRouteParseJsonDate,
+                carBrand, carModel, dateStart, dateMax, countPages);
+        return restTemplate.getForObject(url, List.class);
     }
 }
