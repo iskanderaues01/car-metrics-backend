@@ -1,20 +1,23 @@
 package com.energo.car_metrics.services.impl;
 
 import com.energo.car_metrics.dto.FileInfo;
+import com.energo.car_metrics.models.Car;
+import com.energo.car_metrics.repositories.CarRepository;
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.http.HttpHeaders;
-import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
 
+import java.io.File;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.util.ArrayList;
 import java.io.IOException;
 import java.nio.file.*;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.regex.Pattern;
 
 import org.springframework.core.io.Resource;
 import org.springframework.core.io.UrlResource;
@@ -24,7 +27,7 @@ import org.springframework.web.client.RestTemplate;
 public class CarsDataInfo {
 
     @Value("${app.path_dir_save_csv}")
-    private String getPathDirSaveCSV;
+    private String getPathDirSaveFilesCars;
 
     @Value("${app.format_route_parse_json_date}")
     private String getRouteParseJsonDate;
@@ -32,13 +35,20 @@ public class CarsDataInfo {
     @Autowired
     private final RestTemplate restTemplate;
 
-    public CarsDataInfo(RestTemplate restTemplate) {
+    @Autowired
+    private final ObjectMapper objectMapper;
+
+    @Autowired
+    private CarRepository carRepository;
+
+    public CarsDataInfo(RestTemplate restTemplate, ObjectMapper objectMapper) {
         this.restTemplate = restTemplate;
+        this.objectMapper = objectMapper;
     }
 
     public List<FileInfo> getAllListCarsInDir() {
         List<FileInfo> fileDetails = new ArrayList<>();
-        Path directoryPath = Paths.get(getPathDirSaveCSV);
+        Path directoryPath = Paths.get(getPathDirSaveFilesCars);
 
         try (DirectoryStream<Path> directoryStream = Files.newDirectoryStream(directoryPath)) {
             for (Path file : directoryStream) {
@@ -55,9 +65,9 @@ public class CarsDataInfo {
                 }
             }
         } catch (NoSuchFileException e) {
-            System.err.println("Error: Directory not found - " + getPathDirSaveCSV);
+            System.err.println("Error: Directory not found - " + getPathDirSaveFilesCars);
         } catch (NotDirectoryException e) {
-            System.err.println("Error: Path is not a directory - " + getPathDirSaveCSV);
+            System.err.println("Error: Path is not a directory - " + getPathDirSaveFilesCars);
         } catch (IOException e) {
             System.err.println("Error: Unable to read directory - " + e.getMessage());
         }
@@ -66,7 +76,7 @@ public class CarsDataInfo {
     }
 
     public boolean deleteCarDataFile(String fileName) {
-        Path filePath = Paths.get(getPathDirSaveCSV, fileName); // Полный путь к файлу
+        Path filePath = Paths.get(getPathDirSaveFilesCars, fileName); // Полный путь к файлу
 
         try {
             if (Files.exists(filePath)) { // Проверка, существует ли файл
@@ -84,7 +94,7 @@ public class CarsDataInfo {
     }
 
     public Resource loadFileAsResource(String fileName) throws Exception {
-        Path filePath = Paths.get(getPathDirSaveCSV).resolve(fileName).normalize();
+        Path filePath = Paths.get(getPathDirSaveFilesCars).resolve(fileName).normalize();
 
         // Проверяем существование файла
         Resource resource = new UrlResource(filePath.toUri());
@@ -105,5 +115,77 @@ public class CarsDataInfo {
         String url = String.format(getRouteParseJsonDate,
                 carBrand, carModel, dateStart, dateMax, countPages);
         return restTemplate.getForObject(url, List.class);
+    }
+
+    public List<Map<String, Object>> saveCars(List<Map<String, Object>> carData) {
+
+        // Регулярное выражение для чисел (позволяет пробелы внутри числа)
+        Pattern mileagePattern = Pattern.compile("^\\d+(\\s\\d+)*$");
+
+        // Список для хранения новых объектов в формате Map
+        List<Map<String, Object>> savedCars = new ArrayList<>();
+
+        for (Map<String, Object> car : carData) {
+            try {
+                String mileageValue = (String) car.get("Mileage");
+
+                // Проверяем, соответствует ли значение шаблону числа
+                if (mileageValue != null && mileagePattern.matcher(mileageValue).matches()) {
+                    // Убираем пробелы и преобразуем строку в число
+                    double mileage = Double.parseDouble(mileageValue.replace(" ", ""));
+
+                    Car carEntity = new Car();
+                    carEntity.setTitle((String) car.get("Title"));
+                    carEntity.setPrice((String) car.get("Price"));
+                    carEntity.setYear(Integer.parseInt((String) car.get("Year")));
+                    carEntity.setLink((String) car.get("Link"));
+                    carEntity.setConditionBody((String) car.get("ConditionBody"));
+                    carEntity.setEngineVolume(Double.parseDouble((String) car.get("EngineVolume")));
+                    carEntity.setFuel((String) car.get("Fuel"));
+                    carEntity.setTransmission((String) car.get("Transmission"));
+                    carEntity.setMileage(mileage);  // Сохраняем числовое значение пробега
+                    carEntity.setRawDescription((String) car.get("RawDescription"));
+
+                    // Сохраняем объект в базе данных
+                    carRepository.save(carEntity);
+
+                    // Преобразуем сохранённый объект Car обратно в Map
+                    Map<String, Object> savedCarMap = new HashMap<>();
+                    savedCarMap.put("Title", carEntity.getTitle());
+                    savedCarMap.put("Price", carEntity.getPrice());
+                    savedCarMap.put("Year", carEntity.getYear());
+                    savedCarMap.put("Link", carEntity.getLink());
+                    savedCarMap.put("ConditionBody", carEntity.getConditionBody());
+                    savedCarMap.put("EngineVolume", carEntity.getEngineVolume());
+                    savedCarMap.put("Fuel", carEntity.getFuel());
+                    savedCarMap.put("Transmission", carEntity.getTransmission());
+                    savedCarMap.put("Mileage", carEntity.getMileage());
+                    savedCarMap.put("RawDescription", carEntity.getRawDescription());
+
+                    // Добавляем Map в список сохранённых объектов
+                    savedCars.add(savedCarMap);
+                } else {
+                    System.err.println("Skipping record due to invalid Mileage value: " + mileageValue);
+                }
+            } catch (NumberFormatException e) {
+                // Пропускаем запись, если нельзя преобразовать в число
+                System.err.println("Skipping record due to invalid numeric conversion: " + car.get("Mileage"));
+            }
+        }
+        return savedCars;
+    }
+
+
+    public List<Map<String, Object>> parseJsonFile(String fileName) throws IOException {
+        // Путь к файлу (можно адаптировать в зависимости от вашего пути)
+        File file = new File(getPathDirSaveFilesCars + fileName);
+
+        // Проверка, существует ли файл
+        if (!file.exists()) {
+            throw new IOException("File not found: " + fileName);
+        }
+
+        // Чтение файла и преобразование JSON в List<Map<String, Object>>
+        return objectMapper.readValue(file, new TypeReference<List<Map<String, Object>>>() {});
     }
 }

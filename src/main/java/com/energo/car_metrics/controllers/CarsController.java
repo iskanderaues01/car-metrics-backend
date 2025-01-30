@@ -14,6 +14,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
+import java.io.IOException;
 import java.util.List;
 import java.util.Map;
 
@@ -69,6 +70,29 @@ public class CarsController {
                                                         @RequestParam int dateMax,
                                                         @RequestParam int countPages) {
         return carsDataInfo.fetchCarData(carBrand, carModel, dateStart, dateMax, countPages);
+    }
+
+    @GetMapping("/save-car-data")
+    @PreAuthorize("hasRole('ADMIN')")
+    public List<Map<String, Object>> saveCarData(
+            @RequestParam String carBrand,
+            @RequestParam String carModel,
+            @RequestParam int dateStart,
+            @RequestParam int dateMax,
+            @RequestParam int countPages
+    ) {
+        List<Map<String, Object>> carData = getCarDataWithDate(carBrand, carModel, dateStart, dateMax, countPages);
+        return carsDataInfo.saveCars(carData);
+    }
+
+    @GetMapping("/get-file/{fileName}")
+    @PreAuthorize("hasRole('ADMIN')")
+    public List<Map<String, Object>> getJsonCarInfo(@PathVariable String fileName) {
+        try {
+            return carsDataInfo.parseJsonFile(fileName);
+        } catch (IOException e) {
+            throw new RuntimeException("Error reading file: " + fileName, e);
+        }
     }
 
 }
