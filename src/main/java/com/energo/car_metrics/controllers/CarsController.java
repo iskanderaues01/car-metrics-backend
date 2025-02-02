@@ -47,6 +47,7 @@ public class CarsController {
     }
 
     @GetMapping("/download-car-info/{fileName}")
+    @PreAuthorize("hasAnyRole('ADMIN', 'MOD', 'USER')")
     public ResponseEntity<Resource> downloadFileCar(@PathVariable String fileName) {
         try {
             // Используем сервис для загрузки ресурса
@@ -86,13 +87,21 @@ public class CarsController {
     }
 
     @GetMapping("/get-file/{fileName}")
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'MOD', 'USER')")
     public List<Map<String, Object>> getJsonCarInfo(@PathVariable String fileName) {
         try {
             return carsDataInfo.parseJsonFile(fileName);
         } catch (IOException e) {
             throw new RuntimeException("Error reading file: " + fileName, e);
         }
+    }
+
+    @GetMapping("/perform-analysis")
+    @PreAuthorize("hasAnyRole('ADMIN', 'MOD', 'USER')")
+    public Map<String, Object> performAnalysis(
+            @RequestParam String type,
+            @RequestParam String filename) {
+        return carsDataInfo.performAnalysis(type, filename);
     }
 
 }

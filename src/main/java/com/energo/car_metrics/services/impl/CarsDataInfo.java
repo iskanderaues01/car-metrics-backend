@@ -32,6 +32,21 @@ public class CarsDataInfo {
     @Value("${app.format_route_parse_json_date}")
     private String getRouteParseJsonDate;
 
+    @Value("${app.analysis_linear_by_year}")
+    private String analysisLinearByYear;
+
+    @Value("${app.analysis_linear_by_mileage}")
+    private String analysisLinearByMileage;
+
+    @Value("${app.analysis_linear_by_engine_volume}")
+    private String analysisLinearByEngineVolume;
+
+    @Value("${app.analysis_multiple_linear}")
+    private String analysisMultipleLinear;
+
+    @Value("${app.analysis_multiple_dummies}")
+    private String analysisMultipleDummies;
+
     @Autowired
     private final RestTemplate restTemplate;
 
@@ -187,5 +202,33 @@ public class CarsDataInfo {
 
         // Чтение файла и преобразование JSON в List<Map<String, Object>>
         return objectMapper.readValue(file, new TypeReference<List<Map<String, Object>>>() {});
+    }
+
+
+    public Map<String, Object> performAnalysis(String type, String filename) {
+        String url = determineUrl(type, filename);
+        if (url == null) {
+            throw new IllegalArgumentException("Invalid analysis type: " + type);
+        }
+
+        // Отправляем GET-запрос и получаем ответ в формате Map<String, Object>
+        return restTemplate.getForObject(url, Map.class);
+    }
+
+    private String determineUrl(String type, String filename) {
+        switch (type) {
+            case "year":
+                return String.format(analysisLinearByYear, filename);
+            case "mileage":
+                return String.format(analysisLinearByMileage, filename);
+            case "engine_volume":
+                return String.format(analysisLinearByEngineVolume, filename);
+            case "multiple_linear":
+                return String.format(analysisMultipleLinear, filename);
+            case "multiple_dummies":
+                return String.format(analysisMultipleDummies, filename);
+            default:
+                return null;
+        }
     }
 }
