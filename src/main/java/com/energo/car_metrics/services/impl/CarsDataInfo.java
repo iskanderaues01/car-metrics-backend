@@ -4,19 +4,20 @@ import com.energo.car_metrics.dto.FileInfo;
 import com.energo.car_metrics.models.Car;
 import com.energo.car_metrics.repositories.CarRepository;
 import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
+import java.io.BufferedReader;
 import java.io.File;
+import java.io.FileReader;
 import java.nio.file.attribute.BasicFileAttributes;
-import java.util.ArrayList;
+import java.text.SimpleDateFormat;
+import java.util.*;
 import java.io.IOException;
 import java.nio.file.*;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
 import java.util.regex.Pattern;
 
 import org.springframework.core.io.Resource;
@@ -47,6 +48,9 @@ public class CarsDataInfo {
     @Value("${app.analysis_multiple_dummies}")
     private String analysisMultipleDummies;
 
+    @Value("${app.get_image_car}")
+    private String imageCarUrlTemplate;
+
     @Autowired
     private final RestTemplate restTemplate;
 
@@ -59,6 +63,42 @@ public class CarsDataInfo {
     public CarsDataInfo(RestTemplate restTemplate, ObjectMapper objectMapper) {
         this.restTemplate = restTemplate;
         this.objectMapper = objectMapper;
+    }
+
+    public Map<String, Object> getCarImage(String fileName) throws IOException {
+        // Путь к JSON файлу
+        File jsonFile = new File(getPathDirSaveFilesCars + fileName);
+
+        if (!jsonFile.exists()) {
+            throw new IOException("File not found: " + fileName);
+        }
+
+        // Читаем массив JSON объектов из файла
+        List<Map<String, Object>> carDataList = objectMapper.readValue(jsonFile, new TypeReference<List<Map<String, Object>>>() {});
+
+        // Проверяем, что список не пустой
+        if (carDataList.isEmpty()) {
+            throw new IOException("No data found in file: " + fileName);
+        }
+
+        // Извлекаем данные из первой записи
+        Map<String, Object> firstCar = carDataList.get(0);
+        String title = ((String) firstCar.get("Title")).toLowerCase().replace(" ", "_");
+        String link = (String) firstCar.get("Link");
+
+        // Формируем название изображения с текущей датой
+        String photoName = title + "_" + getCurrentDate();
+
+        // Формируем URL запроса
+        String requestUrl = String.format(imageCarUrlTemplate, link, photoName);
+
+        // Отправляем GET-запрос на внешний сервис и получаем JSON-ответ
+        return restTemplate.getForObject(requestUrl, Map.class);
+    }
+
+    // Метод для получения текущей даты в формате yyyyMMdd
+    private String getCurrentDate() {
+        return new SimpleDateFormat("yyyyMMdd").format(new Date());
     }
 
     public List<FileInfo> getAllListCarsInDir() {

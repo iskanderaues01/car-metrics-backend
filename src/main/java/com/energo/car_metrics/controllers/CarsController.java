@@ -104,4 +104,14 @@ public class CarsController {
         return carsDataInfo.performAnalysis(type, filename);
     }
 
+    @GetMapping("/get-car-image")
+    @PreAuthorize("hasAnyRole('ADMIN', 'MOD', 'USER')")
+    public Map<String, Object> getCarImage(@RequestParam String fileName) {
+        try {
+            return carsDataInfo.getCarImage(fileName);
+        } catch (IOException e) {
+            throw new RuntimeException("Error processing file: " + fileName, e);
+        }
+    }
+
 }
