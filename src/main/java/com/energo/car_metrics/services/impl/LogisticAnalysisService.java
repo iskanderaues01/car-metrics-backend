@@ -46,7 +46,8 @@ public class LogisticAnalysisService {
         LogisticAnalysisHistory history = new LogisticAnalysisHistory();
         history.setUserId(userId);
         history.setFileAnalyzed((String) analysisResult.get("fileAnalyzed"));
-        history.setPriceThreshold((Integer) analysisResult.get("priceThreshold"));
+        //history.setPriceThreshold((Integer) analysisResult.get("priceThreshold"));
+        history.setPriceThreshold(((Double) analysisResult.get("priceThreshold")).intValue());
         history.setAccuracy((Double) analysisResult.get("accuracy"));
         history.setConfusionMatrix(objectMapper.writeValueAsString(analysisResult.get("confusionMatrix")));
         history.setCoefficients(objectMapper.writeValueAsString(analysisResult.get("coefficients")));
