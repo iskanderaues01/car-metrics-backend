@@ -10,6 +10,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 import java.io.IOException;
+import java.util.List;
 import java.util.Map;
 
 @Service
@@ -63,5 +64,9 @@ public class LogisticAnalysisService {
         }
 
         return history;
+    }
+
+    public List<LogisticAnalysisHistory> getHistoryByUserId(Long userId) {
+        return repository.findByUserId(userId);
     }
 }

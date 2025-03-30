@@ -24,7 +24,7 @@ public class AnalysisHistoryController {
     }
 
     @PreAuthorize("hasAnyRole('ADMIN', 'MOD', 'USER')")
-    @PostMapping("/save")
+    @PostMapping("/save-leaner")
     public ResponseEntity<AnalysisHistory> saveAnalysisHistory(
             @RequestParam Long userId,
             @RequestBody Map<String, Object> analysisData) {
