@@ -5,11 +5,15 @@ import com.energo.car_metrics.models.UserAny;
 import com.energo.car_metrics.models.enums.TicketStatus;
 import com.energo.car_metrics.repositories.TicketRepository;
 import com.energo.car_metrics.repositories.UserRepository;
+import com.energo.car_metrics.utils.SecurityUtils;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.Optional;
+
+
 
 @Service
 public class TicketService {
@@ -20,6 +24,21 @@ public class TicketService {
     public TicketService(TicketRepository ticketRepository, UserRepository userRepository) {
         this.ticketRepository = ticketRepository;
         this.userRepository = userRepository;
+    }
+
+    public List<Ticket> getTicketsForCurrentUser() {
+        String username = SecurityUtils.getCurrentUsername();
+        UserAny currentUser = userRepository.findByUsername(username)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+
+        boolean isAdmin = currentUser.getRoles().stream()
+                .anyMatch(role -> role.getName().name().equals("ROLE_ADMIN"));
+
+        if (isAdmin) {
+            return ticketRepository.findAll();
+        } else {
+            return ticketRepository.findByCreatedBy(currentUser);
+        }
     }
 
     // Создание новой заявки пользователем
@@ -33,29 +52,46 @@ public class TicketService {
     }
 
     // Редактирование заявки (разрешено только владельцу и только если заявка еще в статусе NEW)
-    @Transactional
-    public Ticket updateTicket(Long ticketId, Long userId, Ticket updatedTicket) {
+    public Ticket updateTicket(Long ticketId, Ticket updatedTicketData) {
+        String username = SecurityUtils.getCurrentUsername();
+        UserAny currentUser = userRepository.findByUsername(username)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+
         Ticket ticket = ticketRepository.findById(ticketId)
-                .orElseThrow(() -> new RuntimeException("Заявка не найдена"));
-        if (!ticket.getCreatedBy().getId().equals(userId)) {
-            throw new RuntimeException("Нет прав на редактирование данной заявки");
+                .orElseThrow(() -> new RuntimeException("Ticket not found"));
+
+        boolean isAdmin = currentUser.getRoles().stream()
+                .anyMatch(role -> role.getName().name().equals("ROLE_ADMIN"));
+
+        if (!isAdmin && !ticket.getCreatedBy().getId().equals(currentUser.getId())) {
+            throw new AccessDeniedException("You are not allowed to update this ticket");
         }
-        if (ticket.getStatus() != TicketStatus.NEW) {
-            throw new RuntimeException("Редактирование невозможно: заявка уже обработана");
-        }
-        ticket.setTitle(updatedTicket.getTitle());
-        ticket.setDescription(updatedTicket.getDescription());
+
+        ticket.setTitle(updatedTicketData.getTitle());
+        ticket.setDescription(updatedTicketData.getDescription());
+        ticket.setStatus(updatedTicketData.getStatus());
         return ticketRepository.save(ticket);
     }
 
-    // Изменение статуса заявки модератором (например, на ACCEPTED или COMPLETED)
-    @Transactional
     public Ticket updateTicketStatus(Long ticketId, TicketStatus status) {
+        String username = SecurityUtils.getCurrentUsername();
+        UserAny currentUser = userRepository.findByUsername(username)
+                .orElseThrow(() -> new RuntimeException("Пользователь не найден"));
+
+        boolean isAdmin = currentUser.getRoles().stream()
+                .anyMatch(role -> role.getName().name().equals("ROLE_ADMIN"));
+
+        if (!isAdmin) {
+            throw new AccessDeniedException("Только администратор может менять статус заявки");
+        }
+
         Ticket ticket = ticketRepository.findById(ticketId)
                 .orElseThrow(() -> new RuntimeException("Заявка не найдена"));
+
         ticket.setStatus(status);
         return ticketRepository.save(ticket);
     }
+
 
     // Удаление заявки (только администратор)
     @Transactional

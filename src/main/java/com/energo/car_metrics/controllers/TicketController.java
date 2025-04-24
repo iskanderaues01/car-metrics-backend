@@ -25,21 +25,18 @@ public class TicketController {
         return ResponseEntity.ok(createdTicket);
     }
 
-    // Редактирование заявки (только владелец)
     @PutMapping("/{ticketId}")
     @PreAuthorize("hasAnyRole('USER', 'MOD', 'ADMIN')")
     public ResponseEntity<Ticket> updateTicket(@PathVariable Long ticketId,
-                                               @RequestParam Long userId,
                                                @RequestBody Ticket ticket) {
-        Ticket updatedTicket = ticketService.updateTicket(ticketId, userId, ticket);
+        Ticket updatedTicket = ticketService.updateTicket(ticketId, ticket);
         return ResponseEntity.ok(updatedTicket);
     }
 
-    // Изменение статуса заявки (только модератор)
     @PutMapping("/{ticketId}/status")
-    @PreAuthorize("hasAnyRole('MOD', 'ADMIN')")
-    public ResponseEntity<Ticket> updateTicketStatus(@PathVariable Long ticketId,
-                                                     @RequestParam TicketStatus status) {
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<Ticket> updateStatus(@PathVariable Long ticketId,
+                                               @RequestParam TicketStatus status) {
         Ticket updatedTicket = ticketService.updateTicketStatus(ticketId, status);
         return ResponseEntity.ok(updatedTicket);
     }
@@ -52,16 +49,10 @@ public class TicketController {
         return ResponseEntity.noContent().build();
     }
 
-    // Получение заявок по пользователю (если указан параметр userId) или всех заявок (администратор)
     @GetMapping
     @PreAuthorize("hasAnyRole('USER', 'MOD', 'ADMIN')")
-    public ResponseEntity<List<Ticket>> getTickets(@RequestParam(required = false) Long userId) {
-        List<Ticket> tickets;
-        if (userId != null) {
-            tickets = ticketService.getTicketsByUser(userId);
-        } else {
-            tickets = ticketService.getAllTickets();
-        }
+    public ResponseEntity<List<Ticket>> getTickets() {
+        List<Ticket> tickets = ticketService.getTicketsForCurrentUser();
         return ResponseEntity.ok(tickets);
     }
 }

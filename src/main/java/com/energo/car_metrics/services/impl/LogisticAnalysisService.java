@@ -24,7 +24,7 @@ public class LogisticAnalysisService {
     @Value("${app.analysis_logistic}")
     private String ANALYSIS_URL;
 
-    public LogisticAnalysisHistory performAnalysis(String filename, Integer priceThreshold, Long userId, boolean save) throws Exception {
+    public LogisticAnalysisHistory performAnalysis(String filename, Double priceThreshold, Long userId, boolean save) throws Exception {
         String url = String.format(ANALYSIS_URL, filename, priceThreshold);
 
         // Отправляем запрос на внешний сервер
@@ -44,11 +44,13 @@ public class LogisticAnalysisService {
             System.err.println("Ошибка при чтении изображения: " + e.getMessage());
         }
 
+        Object raw = analysisResult.get("priceThreshold");
+        double threshold = objectMapper.convertValue(raw, Double.class);
+
         LogisticAnalysisHistory history = new LogisticAnalysisHistory();
         history.setUserId(userId);
         history.setFileAnalyzed((String) analysisResult.get("fileAnalyzed"));
-        //history.setPriceThreshold((Integer) analysisResult.get("priceThreshold"));
-        history.setPriceThreshold(((Double) analysisResult.get("priceThreshold")).intValue());
+        history.setPriceThreshold(threshold);
         history.setAccuracy((Double) analysisResult.get("accuracy"));
         history.setConfusionMatrix(objectMapper.writeValueAsString(analysisResult.get("confusionMatrix")));
         history.setCoefficients(objectMapper.writeValueAsString(analysisResult.get("coefficients")));
@@ -70,3 +72,4 @@ public class LogisticAnalysisService {
         return repository.findByUserId(userId);
     }
 }
+

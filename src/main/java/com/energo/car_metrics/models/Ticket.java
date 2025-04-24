@@ -24,7 +24,7 @@ public class Ticket {
     @NotBlank
     private String title;
 
-    @Lob
+    @Column(columnDefinition = "TEXT")
     private String description;
 
     @Enumerated(EnumType.STRING)

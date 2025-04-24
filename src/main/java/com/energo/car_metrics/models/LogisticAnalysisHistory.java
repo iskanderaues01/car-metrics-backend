@@ -22,7 +22,7 @@ public class LogisticAnalysisHistory {
     private String fileAnalyzed;
 
     @Column(name = "price_threshold")
-    private Integer priceThreshold;
+    private Double priceThreshold;
 
     @Column(name = "accuracy")
     private Double accuracy;

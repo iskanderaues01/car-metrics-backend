@@ -24,7 +24,7 @@ public class LogisticAnalysisController {
     @PreAuthorize("hasAnyRole('ADMIN', 'MOD', 'USER')")
     public ResponseEntity<LogisticAnalysisHistory> performAnalysisLogistic(
             @RequestParam String filename,
-            @RequestParam Integer priceThreshold,
+            @RequestParam Double priceThreshold,
             @RequestParam Long userId,
             @RequestParam(required = false, defaultValue = "false") boolean save) {
 
