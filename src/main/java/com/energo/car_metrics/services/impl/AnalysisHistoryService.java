@@ -24,8 +24,8 @@ public class AnalysisHistoryService {
         history.setMessage((String) analysisData.get("message"));
         history.setFileAnalyzed((String) analysisData.get("fileAnalyzed"));
         history.setCountRecords((Integer) analysisData.get("countRecords"));
-        history.setMse((Double) analysisData.get("mse"));
-        history.setRSquared((Double) analysisData.get("rSquared"));
+        history.setMse((Long) analysisData.get("mse"));
+        history.setRSquared(String.valueOf((Double) analysisData.get("rSquared")));
         history.setEquation((String) analysisData.get("equation"));
         history.setImgBase64((String) analysisData.get("imgBase64"));
         history.setCarBrand((String) analysisData.get("carBrand"));

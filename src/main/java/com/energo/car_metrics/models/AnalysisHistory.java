@@ -29,10 +29,10 @@ public class AnalysisHistory {
     private Integer countRecords;
 
     @Column(name = "mse")
-    private Double mse;
+    private Long mse;
 
     @Column(name = "r_squared")
-    private Double rSquared;
+    private String rSquared;
 
     @Column(name = "equation", columnDefinition = "TEXT")
     private String equation;

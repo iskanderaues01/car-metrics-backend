@@ -28,7 +28,7 @@ public class CarsController {
     private CarsDataInfo carsDataInfo;
 
     @GetMapping("list-parser")
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'MOD', 'USER')")
     public ResponseEntity<List<FileInfo>> getListParserCars() {
         return  ResponseEntity.ok(carsDataInfo.getAllListCarsInDir());
     }
@@ -64,7 +64,7 @@ public class CarsController {
     }
 
     @GetMapping("/data-car-date")
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'MOD', 'USER')")
     public List<Map<String, Object>> getCarDataWithDate(@RequestParam String carBrand,
                                                         @RequestParam String carModel,
                                                         @RequestParam int dateStart,
