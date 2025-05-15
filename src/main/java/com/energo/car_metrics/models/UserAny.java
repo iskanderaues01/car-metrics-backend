@@ -27,6 +27,9 @@ public class UserAny {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    @Column(name = "avatar_url", columnDefinition = "TEXT")
+    private String avatarUrl;
+
     @NotBlank
     @Size(max = 100)
     private String username;

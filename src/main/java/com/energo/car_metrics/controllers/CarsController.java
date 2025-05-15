@@ -74,7 +74,7 @@ public class CarsController {
     }
 
     @GetMapping("/save-car-data")
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'MOD', 'USER')")
     public List<Map<String, Object>> saveCarData(
             @RequestParam String carBrand,
             @RequestParam String carModel,

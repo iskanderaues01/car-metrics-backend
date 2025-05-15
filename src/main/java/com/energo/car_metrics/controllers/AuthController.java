@@ -1,5 +1,8 @@
 package com.energo.car_metrics.controllers;
 
+import com.energo.car_metrics.dto.ChangePasswordRequest;
+import com.energo.car_metrics.dto.UpdateAvatarRequest;
+import com.energo.car_metrics.services.impl.UserDetailsServiceImpl;
 import jakarta.validation.Valid;
 import com.energo.car_metrics.models.Role;
 import com.energo.car_metrics.models.UserAny;
@@ -13,6 +16,7 @@ import com.energo.car_metrics.repositories.RoleRepository;
 import com.energo.car_metrics.repositories.UserRepository;
 import com.energo.car_metrics.security.jwt.JwtUtils;
 import com.energo.car_metrics.services.impl.UserDetailsImpl;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -22,7 +26,9 @@ import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.HashSet;
@@ -48,6 +54,9 @@ public class AuthController {
 
     @Autowired
     PasswordEncoder passwordEncoder;
+
+    @Autowired
+    UserDetailsServiceImpl userService;
 
     @Autowired
     JwtUtils jwtUtils;
@@ -116,4 +125,7 @@ public class AuthController {
 
         return ResponseEntity.ok(new MessageResponse("User registered successfully!"));
     }
+
+
+
 }
